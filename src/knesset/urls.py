@@ -12,6 +12,7 @@ from knesset.sitemap import sitemaps
 from knesset.mks.urls import mksurlpatterns
 from knesset.laws.urls import lawsurlpatterns
 from knesset.committees.urls import committeesurlpatterns
+from knesset.plenum.urls import plenum_urlpatterns
 from knesset.mks.views import get_mk_entry, mk_is_backlinkable
 
 from knesset.auxiliary.views import main, post_annotation, post_details, \
@@ -66,6 +67,7 @@ urlpatterns = patterns('',
      url(r'^tags/(?P<object_type>\w+)/(?P<object_id>\d+)/create-tag/$', create_tag_and_add_to_item, name='create-tag'),
 )
 urlpatterns += mksurlpatterns + lawsurlpatterns + committeesurlpatterns
+urlpatterns += plenum_urlpatterns
 if settings.LOCAL_DEV:
     urlpatterns += patterns('django.views',
         (r'^static/(?P<path>.*)' , 'static.serve',

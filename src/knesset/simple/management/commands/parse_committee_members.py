@@ -89,4 +89,3 @@ class Command(BaseCommand):
         r = self.parse_committee_members()
         logger.debug(r)
         self.update_committee_members_db(r)
-    
