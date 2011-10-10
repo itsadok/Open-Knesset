@@ -93,14 +93,20 @@ class Command(NoArgsCommand):
     def get_transcript(self, doc_url):
         filename = re.findall(r'\w+\.doc$', doc_url)[0]
         print "Saving " + filename
-        docfile = open(os.path.join(DATA_ROOT, "plenum/doc", filename), "w")
-        docfile.write(urllib2.urlopen(doc_url).read())
-        docfile.close()
+        doc_path = os.path.join(DATA_ROOT, "plenum/doc")
+        if not os.path.exists(doc_path):
+            os.makedirs(doc_path)
+        doc_file = open(os.path.join(doc_path, filename), "w")
+        doc_file.write(urllib2.urlopen(doc_url).read())
+        doc_file.close()
 
         text = subprocess.Popen(["antiword", filename], stdout=subprocess.PIPE).communicate()[0]
-        textfile = open(os.path.join(DATA_ROOT, "plenum/text", filename.replace(".doc", ".txt")), "w")
-        textfile.write(text)
-        textfile.close()
+        text_path = os.path.join(DATA_ROOT, "plenum/text")
+        if not os.path.exists(text_path):
+            os.makedirs(text_path)
+        text_file = open(os.path.join(text_path, filename.replace(".doc", ".txt")), "w")
+        text_file.write(text)
+        text_file.close()
 
     def parse_transcript(self, filename):
         matcher = Matcher()
