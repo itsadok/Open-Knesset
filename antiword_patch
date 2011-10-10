@@ -1,0 +1,20 @@
+--- /dev/null	2011-10-10 15:23:08.793078002 +0200
++++ configure.py	2011-10-10 20:17:36.847606652 +0200
+@@ -0,0 +1,17 @@
++from optparse import OptionParser
++
++parser = OptionParser()
++parser.add_option("-p", "--prefix", dest="dest")
++
++(options, args) = parser.parse_args()
++
++infile = open("Makefile.Linux", "r")
++outfile = open("Makefile", "w")
++
++for line in infile:
++    line = line.replace("$(HOME)", options.dest)
++    outfile.write(line)
++
++outfile.close()
++infile.close()
++
