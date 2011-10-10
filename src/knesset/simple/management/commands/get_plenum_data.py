@@ -34,6 +34,9 @@ ENCODING = 'utf8'
 
 DATA_ROOT = getattr(settings, 'DATA_ROOT',
                     os.path.join(settings.PROJECT_ROOT, os.path.pardir, os.path.pardir, 'data'))
+ANTIWORD = os.path.join(settings.PROJECT_ROOT, os.path.pardir, os.path.pardir, 'parts', 'antiword', 'bin', 'antiword')
+if not os.path.exists(ANTIWORD):
+    ANTIWORD = 'antiword'
 
 logger = logging.getLogger("open-knesset.get_plenum_data")
 
@@ -100,13 +103,16 @@ class Command(NoArgsCommand):
         doc_file.write(urllib2.urlopen(doc_url).read())
         doc_file.close()
 
-        text = subprocess.Popen(["antiword", filename], stdout=subprocess.PIPE).communicate()[0]
-        text_path = os.path.join(DATA_ROOT, "plenum/text")
-        if not os.path.exists(text_path):
-            os.makedirs(text_path)
-        text_file = open(os.path.join(text_path, filename.replace(".doc", ".txt")), "w")
-        text_file.write(text)
-        text_file.close()
+        try:
+            text = subprocess.Popen([ANTIWORD, filename], stdout=subprocess.PIPE).communicate()[0]
+            text_path = os.path.join(DATA_ROOT, "plenum/text")
+            if not os.path.exists(text_path):
+                os.makedirs(text_path)
+            text_file = open(os.path.join(text_path, filename.replace(".doc", ".txt")), "w")
+            text_file.write(text)
+            text_file.close()
+        except OSError:
+            logger.error("Failed to run antiword on %s" % filename)
 
     def parse_transcript(self, filename):
         matcher = Matcher()
