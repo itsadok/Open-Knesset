@@ -8,7 +8,7 @@ from views import MeetingsListView, MeetingDetailView
 meetings_list = MeetingsListView(queryset = PlenumMeeting.objects.all(), paginate_by=20)
 meeting_details = MeetingDetailView.as_view()
 
-plenum_urlpatterns = patterns ('',
-    url(r'^plenum/$', meetings_list, name='meetings-list'),
-    url(r'^plenum/(?P<pk>\d+)/$', meeting_details, name='plenum-meeting'),
+urlpatterns = patterns ('',
+    url(r'^$', meetings_list, name='meetings-list'),
+    url(r'^(?P<pk>\d+)/$', meeting_details, name='plenum-meeting'),
 )
