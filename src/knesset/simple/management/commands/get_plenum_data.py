@@ -3,12 +3,14 @@ import urllib2, urllib, cookielib, re, gzip, datetime, time, logging, os, sys,tr
 import codecs
 import calendar
 import subprocess
-from itertools import izip
+from itertools import izip, count
 from urlparse import urljoin
 from tempfile import NamedTemporaryFile
 from datetime import datetime, timedelta
 
 from cStringIO import StringIO
+import knesset
+from plenum.models import PlenumMeeting, Transcript, TranscriptBlock
 from pyth.plugins.rtf15.reader import Rtf15Reader
 from optparse import make_option
 
@@ -39,6 +41,20 @@ if not os.path.exists(ANTIWORD):
     ANTIWORD = 'antiword'
 
 logger = logging.getLogger("open-knesset.get_plenum_data")
+
+class Matcher(object):
+    def __init__(self):
+        self.m = None
+
+    def search(self, pattern, string, flags=0):
+        self.m = re.search(pattern, string, flags)
+        return self.m
+
+    def group(self, *args):
+        return self.m.group(*args)
+
+    def groups(self):
+        return self.m.groups()
 
 class Command(NoArgsCommand):
     option_list = NoArgsCommand.option_list + (
@@ -115,70 +131,85 @@ class Command(NoArgsCommand):
             logger.error("Failed to run antiword on %s" % filename)
 
     def parse_transcript(self, filename):
-        matcher = Matcher()
-        transcript = []
+        meeting = PlenumMeeting()
+        meeting.save()
+        transcript = Transcript()
+        transcript.meeting = meeting
+        transcript.save()
 
-        textlines = []
+        matcher = Matcher()
+
+        text_lines = []
+        ordinal = count()
+        header = None
         speaker = None
         state = "cover"
         for line in codecs.open(filename, "r", "utf-8"):
             if state == "cover":
                 if line.strip() == u"תוכן עניינים":
-                    cover = "".join(textlines)
-                    transcript.append( ("cover", cover) )
-                    textlines = []
+                    cover = "".join(text_lines)
+                    block = TranscriptBlock(transcript = transcript, ordinal = ordinal.next(), body = cover)
+                    block.save()
+                    text_lines = []
                     state = "toc"
                 elif re.search(ur"^<(?!הצע|החלט)", line):
-                    textlines = []
+                    text_lines = []
                     state = "speaker"
                 elif re.search(r"^ *<", line):
-                    textlines = []
+                    text_lines = []
                     state = "header"
+                elif matcher.search(ur"(הישיבה.*?)\s+$", line):
+                    meeting.title = matcher.group(1)
+                    print meeting.title
 
             elif state == "toc":
                 if re.search(ur"^<(?!הצע|החלט)", line):
-                    textlines = []
+                    text_lines = []
                     state = "speaker"
                 elif re.search(r"^ *<", line):
-                    textlines = []
+                    text_lines = []
                     state = "header"
 
             elif state == "header":
                 if re.search(ur"^<(?!הצע|החלט)", line):
-                    header = "".join(textlines)
-                    transcript.append( (header, "") )
-                    textlines = []
+                    header = "".join(text_lines)
+                    block = TranscriptBlock(transcript = transcript, ordinal = ordinal.next(), header = header)
+                    block.save()
+                    header = None
+                    text_lines = []
                     state = "speaker"
 
             elif state == "speaker":
-                speaker_line = "".join(textlines).replace("\n", "")
+                speaker_line = "".join(text_lines).replace("\n", "")
                 if matcher.search(r'^<(.*?):?>$', speaker_line):
-                    speaker = matcher.group(1)
-                    textlines = []
+                    header = matcher.group(1)
+                    try:
+                        speaker = Person.objects.get(name__iexact=header)
+                    except Person.DoesNotExist:
+                        speaker = Person(name=header)
+                        speaker.save()
+                    text_lines = []
                     state = "body"
 
             elif state == "body":
                 if re.search(ur"^<(?!הצע|החלט)", line):
-                    body = "".join(textlines)
-                    transcript.append( (speaker, body) )
-                    speaker = None
-                    textlines = []
                     state = "speaker"
+
                 elif re.search(r"^ *<", line):
-                    body = "".join(textlines)
-                    transcript.append( (speaker, body) )
-                    speaker = None
-                    textlines = []
                     state = "header"
 
-            textlines += line
+                if state != "body":
+                    body = "".join(text_lines)
+                    block = TranscriptBlock(transcript = transcript, ordinal = ordinal.next(), header = header, body = body, speaker = speaker)
+                    block.save()
+                    header = None
+                    speaker = None
+                    text_lines = []
 
-        for header, body in transcript:
-            print "********************************************************************************************"
-            print (header or '').encode("utf-8")
-            print "------------------------------------"
-            print (body or '').encode("utf-8")
+            text_lines += line
 
+        meeting.save()
+        transcript.save()
 
 
 
@@ -208,16 +239,3 @@ class YearMonth(object):
     def days_since_2000(self):
         return (datetime(self.year, self.month, 1) - datetime(2000, 1, 1)).days
 
-class Matcher(object):
-    def __init__(self):
-        self.m = None
-
-    def search(self, pattern, string, flags=0):
-        self.m = re.search(pattern, string, flags)
-        return self.m
-
-    def group(self, *args):
-        return self.m.group(*args)
-
-    def groups(self):
-        return self.m.groups()

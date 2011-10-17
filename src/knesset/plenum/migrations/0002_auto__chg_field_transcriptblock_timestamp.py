@@ -8,57 +8,14 @@ class Migration(SchemaMigration):
 
     def forwards(self, orm):
         
-        # Adding model 'PlenumMeeting'
-        db.create_table('plenum_plenummeeting', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('date', self.gf('django.db.models.fields.DateField')(null=True, blank=True)),
-            ('title', self.gf('django.db.models.fields.CharField')(max_length=256)),
-            ('transcript_text', self.gf('django.db.models.fields.TextField')(null=True, blank=True)),
-            ('src_url', self.gf('django.db.models.fields.URLField')(max_length=1024, null=True, blank=True)),
-        ))
-        db.send_create_signal('plenum', ['PlenumMeeting'])
-
-        # Adding M2M table for field mks_attended on 'PlenumMeeting'
-        db.create_table('plenum_plenummeeting_mks_attended', (
-            ('id', models.AutoField(verbose_name='ID', primary_key=True, auto_created=True)),
-            ('plenummeeting', models.ForeignKey(orm['plenum.plenummeeting'], null=False)),
-            ('member', models.ForeignKey(orm['mks.member'], null=False))
-        ))
-        db.create_unique('plenum_plenummeeting_mks_attended', ['plenummeeting_id', 'member_id'])
-
-        # Adding model 'Transcript'
-        db.create_table('plenum_transcript', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('meeting', self.gf('django.db.models.fields.related.OneToOneField')(to=orm['plenum.PlenumMeeting'], unique=True)),
-        ))
-        db.send_create_signal('plenum', ['Transcript'])
-
-        # Adding model 'TranscriptBlock'
-        db.create_table('plenum_transcriptblock', (
-            ('id', self.gf('django.db.models.fields.AutoField')(primary_key=True)),
-            ('transcript', self.gf('django.db.models.fields.related.ForeignKey')(related_name='blocks', to=orm['plenum.Transcript'])),
-            ('timestamp', self.gf('django.db.models.fields.TimeField')()),
-            ('ordinal', self.gf('django.db.models.fields.IntegerField')()),
-            ('header', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('body', self.gf('django.db.models.fields.TextField')(blank=True)),
-            ('speaker', self.gf('django.db.models.fields.related.ForeignKey')(blank=True, related_name='transcript_blocks', null=True, to=orm['persons.Person'])),
-        ))
-        db.send_create_signal('plenum', ['TranscriptBlock'])
+        # Changing field 'TranscriptBlock.timestamp'
+        db.alter_column('plenum_transcriptblock', 'timestamp', self.gf('django.db.models.fields.TimeField')(null=True))
 
 
     def backwards(self, orm):
         
-        # Deleting model 'PlenumMeeting'
-        db.delete_table('plenum_plenummeeting')
-
-        # Removing M2M table for field mks_attended on 'PlenumMeeting'
-        db.delete_table('plenum_plenummeeting_mks_attended')
-
-        # Deleting model 'Transcript'
-        db.delete_table('plenum_transcript')
-
-        # Deleting model 'TranscriptBlock'
-        db.delete_table('plenum_transcriptblock')
+        # Changing field 'TranscriptBlock.timestamp'
+        db.alter_column('plenum_transcriptblock', 'timestamp', self.gf('django.db.models.fields.TimeField')(default=datetime.date(2011, 10, 17)))
 
 
     models = {
@@ -194,7 +151,7 @@ class Migration(SchemaMigration):
             'id': ('django.db.models.fields.AutoField', [], {'primary_key': 'True'}),
             'ordinal': ('django.db.models.fields.IntegerField', [], {}),
             'speaker': ('django.db.models.fields.related.ForeignKey', [], {'blank': 'True', 'related_name': "'transcript_blocks'", 'null': 'True', 'to': "orm['persons.Person']"}),
-            'timestamp': ('django.db.models.fields.TimeField', [], {}),
+            'timestamp': ('django.db.models.fields.TimeField', [], {'null': 'True'}),
             'transcript': ('django.db.models.fields.related.ForeignKey', [], {'related_name': "'blocks'", 'to': "orm['plenum.Transcript']"})
         }
     }

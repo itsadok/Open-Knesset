@@ -18,7 +18,7 @@ TRANSCRIPT_PAGINATE_BY = 400
 logger = logging.getLogger("open-knesset.plenum.models")
 
 class PlenumMeeting(models.Model):
-    date = models.DateField()
+    date = models.DateField(null=True, blank=True)
     title = models.CharField(max_length=256)
     mks_attended = models.ManyToManyField('mks.Member', related_name='plenum_meetings')
     transcript_text = models.TextField(null=True,blank=True)
@@ -57,7 +57,7 @@ class TranscriptBlockManager(models.Manager):
 
 class TranscriptBlock(models.Model):
     transcript = models.ForeignKey(Transcript, related_name='blocks')
-    timestamp = models.TimeField()
+    timestamp = models.TimeField(null=True)
     ordinal = models.IntegerField()
     header = models.TextField(blank=True)
     body = models.TextField(blank=True)
